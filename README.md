@@ -23,7 +23,7 @@ TrustedUserCAKeys /etc/ssh/accessc_ca.pub
 and a safe, non-executed signing plan:
 
 ```bash
-ssh-keygen -s /path/to/ca_key -I accessc-user-alice-server-prod -n alice -V +300s /path/to/user.pub
+ssh-keygen -s /path/to/ca_key -I accessc-user-alice-server-prod-alice -n alice -V +300s /path/to/user.pub
 ```
 
 See [demo/terminal.md](demo/terminal.md) for a short terminal walkthrough.
@@ -46,7 +46,7 @@ cargo run -- plan examples/policy.yaml --principal user:alice --resource server:
 
 - `dist/sshd/sshd_config.snippet`
 - `dist/ssh/issue-command.txt`
-- `dist/plans/user-alice-server-prod-plan.json`
+- `dist/plans/user-alice-server-prod-alice-plan.json`
 - `dist/audit/<timestamp>-receipt.json`
 
 The MVP does not execute the generated `ssh-keygen` command. It generates the plan and receipt so operators can inspect what would happen.

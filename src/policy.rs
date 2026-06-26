@@ -26,6 +26,10 @@ pub enum PolicyError {
     AtomTooLong { value: String, limit: usize },
     #[error("duplicate rule name `{name}`")]
     DuplicateRuleName { name: String },
+    #[error("duplicate principal id `{id}`")]
+    DuplicatePrincipalId { id: String },
+    #[error("duplicate resource id `{id}`")]
+    DuplicateResourceId { id: String },
     #[error("rule `{rule}` is missing selector `{selector}`")]
     MissingSelector {
         rule: String,
@@ -131,7 +135,11 @@ impl PolicyFile {
         let mut principal_ids = HashSet::new();
         for principal in &self.principals {
             validate_atom(&principal.id)?;
-            principal_ids.insert(principal.id.as_str());
+            if !principal_ids.insert(principal.id.as_str()) {
+                return Err(PolicyError::DuplicatePrincipalId {
+                    id: principal.id.clone(),
+                });
+            }
             for ssh_principal in &principal.ssh_principals {
                 validate_atom(ssh_principal)?;
             }
@@ -141,7 +149,11 @@ impl PolicyFile {
         for resource in &self.resources {
             validate_atom(&resource.id)?;
             validate_atom(&resource.host)?;
-            resource_ids.insert(resource.id.as_str());
+            if !resource_ids.insert(resource.id.as_str()) {
+                return Err(PolicyError::DuplicateResourceId {
+                    id: resource.id.clone(),
+                });
+            }
         }
 
         if self.rules.len() > MAX_RULES {
@@ -296,6 +308,42 @@ rules:
         assert!(matches!(
             PolicyFile::from_yaml_str(yaml),
             Err(PolicyError::DuplicateRuleName { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_duplicate_principal_ids() {
+        let yaml = r#"
+version: 1
+ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+principals:
+  - { id: user:alice, ssh_principals: [alice] }
+  - { id: user:alice, ssh_principals: [alice2] }
+resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }]
+rules:
+  - { name: allow-alice-prod, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
+"#;
+        assert!(matches!(
+            PolicyFile::from_yaml_str(yaml),
+            Err(PolicyError::DuplicatePrincipalId { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_duplicate_resource_ids() {
+        let yaml = r#"
+version: 1
+ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+principals: [{ id: user:alice, ssh_principals: [alice] }]
+resources:
+  - { id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }
+  - { id: server:prod, host: prod-02, trusted_ca_path: /etc/ssh/accessc_ca.pub }
+rules:
+  - { name: allow-alice-prod, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
+"#;
+        assert!(matches!(
+            PolicyFile::from_yaml_str(yaml),
+            Err(PolicyError::DuplicateResourceId { .. })
         ));
     }
 

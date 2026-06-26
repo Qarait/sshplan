@@ -7,6 +7,11 @@ pub enum EvalError {
     Policy(#[from] PolicyError),
     #[error("requested TTL exceeds allowed maximum of {max_seconds}s")]
     TtlTooLong { max_seconds: u64 },
+    #[error("ssh principal `{ssh_principal}` is not allowed for `{principal}`")]
+    SshPrincipalNotAllowed {
+        principal: String,
+        ssh_principal: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +48,10 @@ impl Request {
 
     pub fn safe_name(&self) -> String {
         format!("{}-{}", sanitize(&self.principal), sanitize(&self.resource))
+    }
+
+    pub fn safe_name_for_ssh_principal(&self, ssh_principal: &str) -> String {
+        format!("{}-{}", self.safe_name(), sanitize(ssh_principal))
     }
 }
 
@@ -91,6 +100,47 @@ pub fn evaluate(policy: &PolicyFile, request: &Request) -> Result<Decision, Eval
         return Err(EvalError::TtlTooLong {
             max_seconds: ca_max_ttl,
         });
+    }
+
+    for rule in &policy.rules {
+        if !matches!(rule.effect, Effect::Deny) {
+            continue;
+        }
+        if selector_matches(
+            rule.principal.as_deref().expect("validated selector"),
+            &request.principal,
+        ) && selector_matches(
+            rule.action.as_deref().expect("validated selector"),
+            &request.action,
+        ) && selector_matches(
+            rule.resource.as_deref().expect("validated selector"),
+            &request.resource,
+        ) && ssh_principal_matches(
+            rule.ssh_principal.as_deref(),
+            request.ssh_principal.as_deref(),
+        ) {
+            return Ok(Decision::Deny {
+                rule: rule.name.clone(),
+            });
+        }
+    }
+
+    if let Some(ssh_principal) = &request.ssh_principal {
+        let allowed = policy
+            .principal(&request.principal)
+            .map(|principal| {
+                principal
+                    .ssh_principals
+                    .iter()
+                    .any(|allowed| allowed == ssh_principal)
+            })
+            .unwrap_or(false);
+        if !allowed {
+            return Err(EvalError::SshPrincipalNotAllowed {
+                principal: request.principal.clone(),
+                ssh_principal: ssh_principal.clone(),
+            });
+        }
     }
 
     let mut first_allow: Option<Decision> = None;
@@ -180,6 +230,16 @@ mod tests {
         let decision = evaluate(&policy(), &request).unwrap();
         assert!(matches!(decision, Decision::Deny { .. }));
         assert_eq!(decision.rule_name(), Some("deny-prod-root"));
+    }
+
+    #[test]
+    fn rejects_unlisted_ssh_principal() {
+        let request =
+            Request::from_cli("user:alice", "ssh", "server:prod", Some("bob"), "5m").unwrap();
+        assert!(matches!(
+            evaluate(&policy(), &request),
+            Err(EvalError::SshPrincipalNotAllowed { .. })
+        ));
     }
 
     #[test]

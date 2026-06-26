@@ -74,7 +74,7 @@ pub fn build_plan(
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs())
         .unwrap_or(0);
-    let plan_id = request.safe_name();
+    let plan_id = request.safe_name_for_ssh_principal(&ssh_principal);
     let cert_identity = format!("accessc-{}", plan_id);
     let issue_command = format!(
         "ssh-keygen -s /path/to/ca_key -I {cert_identity} -n {ssh_principal} -V +{ttl_seconds}s /path/to/user.pub"

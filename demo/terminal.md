@@ -34,7 +34,7 @@ Generated issue command:
 
 ```bash
 # dist/ssh/issue-command.txt
-ssh-keygen -s /path/to/ca_key -I accessc-user-alice-server-prod -n alice -V +300s /path/to/user.pub
+ssh-keygen -s /path/to/ca_key -I accessc-user-alice-server-prod-alice -n alice -V +300s /path/to/user.pub
 ```
 
 Generated audit receipt shape:
@@ -43,7 +43,7 @@ Generated audit receipt shape:
 {
   "event": "certificate_issuance_planned",
   "decision": "allow",
-  "plan_id": "user-alice-server-prod",
+  "plan_id": "user-alice-server-prod-alice",
   "principal": "user:alice",
   "action": "ssh",
   "resource": "server:prod",
