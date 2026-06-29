@@ -125,16 +125,16 @@ pub fn evaluate(policy: &PolicyFile, request: &Request) -> Result<Decision, Eval
         }
     }
 
+    let principal = match policy.principal(&request.principal) {
+        Some(principal) => principal,
+        None => return Ok(Decision::NoMatch),
+    };
+
     if let Some(ssh_principal) = &request.ssh_principal {
-        let allowed = policy
-            .principal(&request.principal)
-            .map(|principal| {
-                principal
-                    .ssh_principals
-                    .iter()
-                    .any(|allowed| allowed == ssh_principal)
-            })
-            .unwrap_or(false);
+        let allowed = principal
+            .ssh_principals
+            .iter()
+            .any(|allowed| allowed == ssh_principal);
         if !allowed {
             return Err(EvalError::SshPrincipalNotAllowed {
                 principal: request.principal.clone(),

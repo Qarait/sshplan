@@ -13,7 +13,7 @@ pub enum PolicyError {
     #[error("failed to read policy: {0}")]
     Read(#[from] std::io::Error),
     #[error("invalid policy yaml: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] noyalib::Error),
     #[error("invalid atom `{value}` at byte {index}: 0x{byte:02x}")]
     InvalidAtom {
         value: String,
@@ -28,6 +28,8 @@ pub enum PolicyError {
     DuplicateRuleName { name: String },
     #[error("duplicate principal id `{id}`")]
     DuplicatePrincipalId { id: String },
+    #[error("principal `{principal}` must list at least one ssh principal")]
+    EmptySshPrincipals { principal: String },
     #[error("duplicate resource id `{id}`")]
     DuplicateResourceId { id: String },
     #[error("rule `{rule}` is missing selector `{selector}`")]
@@ -106,7 +108,7 @@ impl PolicyFile {
     }
 
     pub fn from_yaml_str(text: &str) -> Result<Self, PolicyError> {
-        let policy: Self = serde_yaml::from_str(text)?;
+        let policy: Self = noyalib::from_str(text)?;
         policy.validate()?;
         Ok(policy)
     }
@@ -138,6 +140,11 @@ impl PolicyFile {
             if !principal_ids.insert(principal.id.as_str()) {
                 return Err(PolicyError::DuplicatePrincipalId {
                     id: principal.id.clone(),
+                });
+            }
+            if principal.ssh_principals.is_empty() {
+                return Err(PolicyError::EmptySshPrincipals {
+                    principal: principal.id.clone(),
                 });
             }
             for ssh_principal in &principal.ssh_principals {
@@ -263,10 +270,18 @@ pub fn parse_duration_seconds(value: &str) -> Result<u64, PolicyError> {
     let number: u64 = number
         .parse()
         .map_err(|_| PolicyError::InvalidDuration(value.to_string()))?;
+    if number == 0 {
+        return Err(PolicyError::InvalidDuration(value.to_string()));
+    }
     match suffix {
         "s" => Ok(number),
-        "m" => Ok(number * 60),
-        "h" => Ok(number * 60 * 60),
+        "m" => number
+            .checked_mul(60)
+            .ok_or_else(|| PolicyError::InvalidDuration(value.to_string())),
+        "h" => number
+            .checked_mul(60)
+            .and_then(|minutes| minutes.checked_mul(60))
+            .ok_or_else(|| PolicyError::InvalidDuration(value.to_string())),
         _ => Err(PolicyError::InvalidDuration(value.to_string())),
     }
 }
@@ -360,6 +375,37 @@ rules:
         assert!(matches!(
             PolicyFile::from_yaml_str(yaml),
             Err(PolicyError::MissingSelector { .. })
+        ));
+    }
+    #[test]
+    fn rejects_empty_ssh_principals() {
+        let yaml = r#"
+version: 1
+ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+principals: [{ id: user:alice, ssh_principals: [] }]
+resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }]
+rules:
+  - { name: allow-alice-prod, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
+"#;
+        assert!(matches!(
+            PolicyFile::from_yaml_str(yaml),
+            Err(PolicyError::EmptySshPrincipals { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_zero_duration() {
+        assert!(matches!(
+            parse_duration_seconds("0s"),
+            Err(PolicyError::InvalidDuration(_))
+        ));
+    }
+
+    #[test]
+    fn rejects_duration_overflow() {
+        assert!(matches!(
+            parse_duration_seconds("18446744073709551615h"),
+            Err(PolicyError::InvalidDuration(_))
         ));
     }
 }

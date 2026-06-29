@@ -47,7 +47,7 @@ cargo run -- plan examples/policy.yaml --principal user:alice --resource server:
 - `dist/sshd/sshd_config.snippet`
 - `dist/ssh/issue-command.txt`
 - `dist/plans/user-alice-server-prod-alice-plan.json`
-- `dist/audit/<timestamp>-receipt.json`
+- `dist/audit/<timestamp>-<plan-id>-receipt.json`
 
 The MVP does not execute the generated `ssh-keygen` command. It generates the plan and receipt so operators can inspect what would happen.
 
