@@ -6,7 +6,7 @@ use tempfile::tempdir;
 #[test]
 fn compile_writes_openssh_artifacts() {
     let dir = tempdir().unwrap();
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .args(["compile", "examples/policy.yaml", "--out"])
         .arg(dir.path())
@@ -14,7 +14,7 @@ fn compile_writes_openssh_artifacts() {
         .success()
         .stdout(predicate::str::contains("compiled OpenSSH artifacts"));
 
-    assert!(dir.path().join("ca/accessc_ca.pub").exists());
+    assert!(dir.path().join("ca/sshplan_ca.pub").exists());
     assert!(dir.path().join("sshd/sshd_config.snippet").exists());
     assert!(dir.path().join("policy/compiled-policy.json").exists());
 }
@@ -22,7 +22,7 @@ fn compile_writes_openssh_artifacts() {
 #[test]
 fn plan_writes_safe_issuance_plan() {
     let dir = tempdir().unwrap();
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .args([
             "plan",
@@ -50,7 +50,7 @@ fn plan_writes_safe_issuance_plan() {
 
 #[test]
 fn check_validates_policy() {
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .args(["check", "examples/policy.yaml"])
         .assert()
@@ -60,7 +60,7 @@ fn check_validates_policy() {
 
 #[test]
 fn decide_returns_allow() {
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .args([
             "decide",
@@ -83,7 +83,7 @@ fn decide_returns_allow() {
 
 #[test]
 fn decide_denies_root() {
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .args([
             "decide",
@@ -106,7 +106,7 @@ fn decide_denies_root() {
 
 #[test]
 fn decide_rejects_unlisted_ssh_principal() {
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .args([
             "decide",
@@ -137,7 +137,7 @@ fn compile_uses_policy_trusted_ca_path() {
         &policy_path,
         r#"version: 1
 ca:
-  name: accessc-demo-ca
+  name: sshplan-demo-ca
   default_ttl: 5m
   max_ttl: 15m
 principals:
@@ -159,7 +159,7 @@ rules:
     .unwrap();
     let out = tempdir().unwrap();
 
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .arg("compile")
         .arg(&policy_path)
@@ -180,7 +180,7 @@ fn plan_keeps_distinct_ssh_principals_in_filenames() {
         &policy_path,
         r#"version: 1
 ca:
-  name: accessc-demo-ca
+  name: sshplan-demo-ca
   default_ttl: 5m
   max_ttl: 15m
 principals:
@@ -189,7 +189,7 @@ principals:
 resources:
   - id: server:prod
     host: prod-01
-    trusted_ca_path: /etc/ssh/accessc_ca.pub
+    trusted_ca_path: /etc/ssh/sshplan_ca.pub
 rules:
   - name: allow-alice-prod
     effect: allow
@@ -203,7 +203,7 @@ rules:
     let out = tempdir().unwrap();
 
     for ssh_principal in ["alice", "alice-admin"] {
-        Command::cargo_bin("accessc")
+        Command::cargo_bin("sshplan")
             .unwrap()
             .arg("plan")
             .arg(&policy_path)
@@ -240,7 +240,7 @@ fn decide_does_not_allow_unknown_principal_through_any() {
         &policy_path,
         r#"version: 1
 ca:
-  name: accessc-demo-ca
+  name: sshplan-demo-ca
   default_ttl: 5m
   max_ttl: 15m
 principals:
@@ -249,7 +249,7 @@ principals:
 resources:
   - id: server:prod
     host: prod-01
-    trusted_ca_path: /etc/ssh/accessc_ca.pub
+    trusted_ca_path: /etc/ssh/sshplan_ca.pub
 rules:
   - name: allow-any-prod
     effect: allow
@@ -261,7 +261,7 @@ rules:
     )
     .unwrap();
 
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .arg("decide")
         .arg(&policy_path)
@@ -288,7 +288,7 @@ fn compile_writes_per_resource_ca_snippets() {
         &policy_path,
         r#"version: 1
 ca:
-  name: accessc-demo-ca
+  name: sshplan-demo-ca
   default_ttl: 5m
   max_ttl: 15m
 principals:
@@ -313,7 +313,7 @@ rules:
     .unwrap();
     let out = tempdir().unwrap();
 
-    Command::cargo_bin("accessc")
+    Command::cargo_bin("sshplan")
         .unwrap()
         .arg("compile")
         .arg(&policy_path)

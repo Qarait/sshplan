@@ -1,10 +1,10 @@
 [package]
-name = "accessc"
+name = "sshplan"
 version = "0.1.0"
 edition = "2021"
 description = "Compile access policy into OpenSSH config, issuance plans, and audit receipts"
 license = "MIT"
-repository = "https://github.com/Qarait/accessc"
+repository = "https://github.com/Qarait/sshplan"
 readme = "README.md"
 keywords = ["openssh", "ssh", "authorization", "access-control", "security"]
 categories = ["command-line-utilities", "authentication"]
@@ -22,5 +22,5 @@ predicates = "3"
 tempfile = "3"
 
 [[bin]]
-name = "accessc"
+name = "sshplan"
 path = "src/main.rs"

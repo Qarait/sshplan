@@ -313,9 +313,9 @@ mod tests {
     fn rejects_duplicate_rule_names() {
         let yaml = r#"
 version: 1
-ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+ca: { name: sshplan-demo-ca, default_ttl: 5m, max_ttl: 15m }
 principals: [{ id: user:alice, ssh_principals: [alice] }]
-resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }]
+resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/sshplan_ca.pub }]
 rules:
   - { name: same, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
   - { name: same, effect: deny, principal: any, action: ssh, resource: server:prod }
@@ -330,11 +330,11 @@ rules:
     fn rejects_duplicate_principal_ids() {
         let yaml = r#"
 version: 1
-ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+ca: { name: sshplan-demo-ca, default_ttl: 5m, max_ttl: 15m }
 principals:
   - { id: user:alice, ssh_principals: [alice] }
   - { id: user:alice, ssh_principals: [alice2] }
-resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }]
+resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/sshplan_ca.pub }]
 rules:
   - { name: allow-alice-prod, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
 "#;
@@ -348,11 +348,11 @@ rules:
     fn rejects_duplicate_resource_ids() {
         let yaml = r#"
 version: 1
-ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+ca: { name: sshplan-demo-ca, default_ttl: 5m, max_ttl: 15m }
 principals: [{ id: user:alice, ssh_principals: [alice] }]
 resources:
-  - { id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }
-  - { id: server:prod, host: prod-02, trusted_ca_path: /etc/ssh/accessc_ca.pub }
+  - { id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/sshplan_ca.pub }
+  - { id: server:prod, host: prod-02, trusted_ca_path: /etc/ssh/sshplan_ca.pub }
 rules:
   - { name: allow-alice-prod, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
 "#;
@@ -366,9 +366,9 @@ rules:
     fn rejects_rule_with_omitted_selector() {
         let yaml = r#"
 version: 1
-ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+ca: { name: sshplan-demo-ca, default_ttl: 5m, max_ttl: 15m }
 principals: [{ id: user:alice, ssh_principals: [alice] }]
-resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }]
+resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/sshplan_ca.pub }]
 rules:
   - { name: bad, effect: allow, principal: user:alice, action: ssh }
 "#;
@@ -381,9 +381,9 @@ rules:
     fn rejects_empty_ssh_principals() {
         let yaml = r#"
 version: 1
-ca: { name: accessc-demo-ca, default_ttl: 5m, max_ttl: 15m }
+ca: { name: sshplan-demo-ca, default_ttl: 5m, max_ttl: 15m }
 principals: [{ id: user:alice, ssh_principals: [] }]
-resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/accessc_ca.pub }]
+resources: [{ id: server:prod, host: prod-01, trusted_ca_path: /etc/ssh/sshplan_ca.pub }]
 rules:
   - { name: allow-alice-prod, effect: allow, principal: user:alice, action: ssh, resource: server:prod }
 "#;

@@ -1,6 +1,6 @@
 version: 1
 ca:
-  name: accessc-demo-ca
+  name: sshplan-demo-ca
   default_ttl: 5m
   max_ttl: 15m
 
@@ -11,7 +11,7 @@ principals:
 resources:
   - id: server:prod
     host: "prod-01"
-    trusted_ca_path: "/etc/ssh/accessc_ca.pub"
+    trusted_ca_path: "/etc/ssh/sshplan_ca.pub"
 
 rules:
   - name: allow-alice-prod

@@ -7,7 +7,7 @@ mod plan;
 mod policy;
 
 #[derive(Debug, Parser)]
-#[command(name = "accessc")]
+#[command(name = "sshplan")]
 #[command(about = "Compile access policy into OpenSSH config, issuance plans, and audit receipts")]
 struct Cli {
     #[command(subcommand)]
